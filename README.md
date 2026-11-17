@@ -1,3 +1,8 @@
+> **This is Orca Pod**, an unofficial fork of Orca that adds named agents with pictures and
+> personalities, teams with shared instructions and memory, agents that hire sub-agents, and a team
+> map. See **[ORCA-POD.md](ORCA-POD.md)** for what was added and how to build it. Everything below is
+> Orca's original README. Orca Pod is not affiliated with the Orca team.
+
 <h1 align="center">
   <a href="https://orca.dev"><img src="resources/build/icon.png" alt="Orca" width="64" valign="middle" /></a> Orca
 </h1>
