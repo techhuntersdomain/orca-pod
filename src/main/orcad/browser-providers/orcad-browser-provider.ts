@@ -13,6 +13,7 @@ import { resolveOrcadAgentBrowserBinary } from './orcad-agent-browser-binary'
 import { ElectronServeBrowserProcess } from './electron/electron-serve-browser-process'
 import { openOrcadBrowserInstallPark } from './orcad-browser-install-park'
 import { errorMessage } from '../../../shared/error-message'
+import { APP_FLAVOR } from '../../../shared/app-flavor'
 
 export type OrcadBrowserProvider = {
   kind: 'electron' | 'chromium'
@@ -75,9 +76,10 @@ export function installedElectronCandidates(
 ): string[] {
   const joinPath = platform === 'win32' ? win32.join : posix.join
   if (platform === 'darwin') {
+    const app = `${APP_FLAVOR.displayName}.app`
     return [
-      '/Applications/Orca.app/Contents/MacOS/Orca',
-      joinPath(homePath, 'Applications', 'Orca.app', 'Contents', 'MacOS', 'Orca')
+      joinPath(homePath, 'Applications', app, 'Contents', 'MacOS', APP_FLAVOR.displayName),
+      joinPath('/Applications', app, 'Contents', 'MacOS', APP_FLAVOR.displayName)
     ]
   }
   if (platform === 'win32') {

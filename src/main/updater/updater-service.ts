@@ -13,6 +13,7 @@ import type { ReleaseBuild, ReleaseChannel } from '../../shared/release-channel'
 import type { ReleaseBuildListOptions } from './releases/updater-release-build-cache'
 import { UpdaterSetup, type UpdaterSetupOptions } from './lifecycle/updater-setup'
 import type { UpdateInstallMode } from './lifecycle/updater-state'
+import { APP_FLAVOR } from '../../shared/app-flavor'
 
 const updater = new UpdaterSetup()
 
@@ -94,5 +95,9 @@ export function setupAutoUpdater(
   mainWindow: BrowserWindow | null,
   opts?: UpdaterSetupOptions
 ): void {
+  // Orca Agents must never update itself into stock Orca; upstream changes arrive by merge.
+  if (!APP_FLAVOR.updatesEnabled) {
+    return
+  }
   updater.setupAutoUpdater(mainWindow, opts)
 }

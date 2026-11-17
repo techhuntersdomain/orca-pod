@@ -1,4 +1,5 @@
 import type { App } from 'electron'
+import { APP_FLAVOR } from '../../../shared/app-flavor'
 
 /**
  * Registers `orca://` with Windows, which NSIS installs leave unregistered; macOS reads it from
@@ -12,11 +13,11 @@ export function registerOrcaProtocolClient(
   if (options.platform !== 'win32' || !app.isPackaged || !options.desktopLaunch) {
     return false
   }
-  if (app.isDefaultProtocolClient('orca')) {
+  if (app.isDefaultProtocolClient(APP_FLAVOR.protocolScheme)) {
     return false
   }
   try {
-    return app.setAsDefaultProtocolClient('orca')
+    return app.setAsDefaultProtocolClient(APP_FLAVOR.protocolScheme)
   } catch (error) {
     console.warn('[protocol] Failed to register orca:// links:', error)
     return false

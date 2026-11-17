@@ -17,6 +17,7 @@ import {
   readActiveProfileId,
   readPersistedHttp1CompatibilityMode
 } from './network-compatibility/http1-compatibility-profile-state'
+import { APP_FLAVOR } from '../../shared/app-flavor'
 
 const DEV_PARENT_SHUTDOWN_GRACE_MS = 3000
 const HTTP1_COMPATIBILITY_ENV_VAR = 'ORCA_DISABLE_HTTP2'
@@ -220,6 +221,10 @@ export function configureDevUserDataPath(isDev: boolean): void {
   }
 
   if (!isDev) {
+    // Orca Agents keeps its own profile so it never reads or rewrites stock Orca's.
+    if (!process.env.ORCA_USER_DATA_PATH) {
+      app.setPath('userData', join(app.getPath('appData'), APP_FLAVOR.userDataDirName))
+    }
     return
   }
   const overrideUserDataPath = process.env.ORCA_DEV_USER_DATA_PATH
