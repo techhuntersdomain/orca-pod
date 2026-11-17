@@ -96,7 +96,8 @@ The app is signed on your own machine, not by Apple, so the first time you open 
 Our changes are a short list of commits on top of an Orca release tag. To move to a newer Orca,
 replay them (`git cherry-pick <base-tag>..orca-pod`) onto the new tag, then run
 `pnpm run tc:node && pnpm run tc:web && pnpm run lint` and the tests. Most of our code is in new
-folders, so conflicts are rare. They show up in the few shared files listed below.
+folders. Expect a few conflicts in the shared files listed below. The generated translation
+catalogs always conflict: keep the new release's copy, then run `pnpm run sync:localization-catalog`.
 
 ## Where the code is
 
