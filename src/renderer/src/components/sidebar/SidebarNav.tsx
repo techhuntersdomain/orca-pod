@@ -1,5 +1,13 @@
 import React from 'react'
-import { BookOpen, CalendarClock, EyeOff, Files, Search, Smartphone } from 'lucide-react'
+import {
+  BookOpen,
+  CalendarClock,
+  EyeOff,
+  Files,
+  Search,
+  Smartphone,
+  UsersRound
+} from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '@/store/index'
 import { cn } from '@/lib/class-names'
@@ -57,6 +65,7 @@ const SidebarNav = React.memo(function SidebarNav() {
   const openMobilePage = useAppStore((s) => s.openMobilePage)
   const openArtifactsPage = useAppStore((s) => s.openArtifactsPage)
   const openSkillsPage = useAppStore((s) => s.openSkillsPage)
+  const openAgentsPage = useAppStore((s) => s.openAgentsPage)
   const openModal = useAppStore((s) => s.openModal)
   const updateSettings = useAppStore((s) => s.updateSettings)
   const activeView = useAppStore((s) => s.activeView)
@@ -69,6 +78,7 @@ const SidebarNav = React.memo(function SidebarNav() {
   const mobileActive = activeView === 'mobile'
   const artifactsActive = activeView === 'artifacts'
   const skillsActive = activeView === 'skills'
+  const agentsActive = activeView === 'agents'
   const mobileOnboardingBadge = useMobileSidebarOnboardingBadge(showMobileButton)
   const hideAutomationsButton = React.useCallback(() => {
     void updateSettings({ showAutomationsButton: false })
@@ -118,6 +128,23 @@ const SidebarNav = React.memo(function SidebarNav() {
         </span>
       </button>
       <SetupGuideSidebarEntry />
+      <button
+        type="button"
+        onClick={openAgentsPage}
+        aria-current={agentsActive ? 'page' : undefined}
+        className={cn(
+          'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] font-medium tracking-tight transition-colors',
+          agentsActive
+            ? 'bg-worktree-sidebar-accent text-worktree-sidebar-accent-foreground'
+            : 'text-worktree-sidebar-foreground/60 hover:bg-worktree-sidebar-foreground/8'
+        )}
+      >
+        <UsersRound
+          className={cn('size-4 shrink-0', !agentsActive && 'text-worktree-sidebar-foreground/30')}
+          strokeWidth={agentsActive ? 2.25 : 1.75}
+        />
+        <span className="flex-1">Agents</span>
+      </button>
       <SidebarTaskNavButton />
       {showArtifactsButton ? (
         <ContextMenu>

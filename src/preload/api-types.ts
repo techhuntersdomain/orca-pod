@@ -48,6 +48,7 @@ import type {
   NotificationsApi
 } from './api/desktop-permissions/os-permission-api'
 import type { PetApi } from './api/pets/pet-api'
+import type { AgentTeamsApi } from './api/agent-teams/agent-teams-api'
 import type { AppIconApi } from './api/window-ui/app-icon-api'
 import type { BrowserPasswordsApi } from './api/browser/browser-passwords-api'
 import type { PluginsApi } from './api/plugins/plugin-host-api'
@@ -139,6 +140,7 @@ export type PreloadApi = {
   shell: ShellApi
   skills: SkillsApi
   pet: PetApi
+  agentTeams: AgentTeamsApi
   appIcon: AppIconApi
   browser: BrowserApi
   browserPasswords: BrowserPasswordsApi

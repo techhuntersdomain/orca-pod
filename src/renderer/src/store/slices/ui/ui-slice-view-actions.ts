@@ -50,6 +50,17 @@ export function createUiViewActions(set: UISliceSet, get: UISliceGet): Partial<U
       set((state) => ({
         activeView: state.previousViewBeforeSpace
       })),
+    openAgentsPage: () => {
+      set((state) => ({
+        activeView: 'agents',
+        previousViewBeforeAgents:
+          state.activeView === 'agents' ? state.previousViewBeforeAgents : state.activeView
+      }))
+    },
+    closeAgentsPage: () =>
+      set((state) => ({
+        activeView: state.previousViewBeforeAgents
+      })),
     openSkillsPage: () => {
       get().recordViewVisit('skills')
       set((state) => ({

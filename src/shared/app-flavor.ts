@@ -5,5 +5,7 @@ export const APP_FLAVOR = {
   bundleId: 'com.frisky.orca-teams',
   protocolScheme: 'orca-teams',
   cliName: 'orca-teams',
+  /** Agent and team files live here (no spaces, so CLIs take the paths as plain flags). */
+  agentHomeDirName: '.orca-teams',
   updatesEnabled: false
 } as const

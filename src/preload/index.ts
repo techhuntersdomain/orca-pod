@@ -54,6 +54,7 @@ import { computerUsePermissionsApi } from './api/desktop-permissions/computer-us
 import { shellApi } from './api/terminal/shell-bridge'
 import { skillsApi } from './api/skills/skills-bridge'
 import { petApi } from './api/pets/pet-bridge'
+import { agentTeamsApi } from './api/agent-teams/agent-teams-bridge'
 import { appIconApi } from './api/window-ui/app-icon-bridge'
 import { browserPasswordsApi } from './api/browser/browser-passwords-bridge'
 import { browserApi } from './api/browser/browser-bridge'
@@ -160,6 +161,7 @@ const api = {
   shell: shellApi,
   skills: skillsApi,
   pet: petApi,
+  agentTeams: agentTeamsApi,
   appIcon: appIconApi,
   browser: browserApi,
   browserPasswords: browserPasswordsApi,

@@ -58,6 +58,7 @@ import { registerAutomationHandlers } from '../automations'
 import { registerKeybindingHandlers } from '../keybindings'
 import { registerTelemetryHandlers } from '../telemetry'
 import { registerShellHandlers } from '../shell'
+import { registerAgentTeamsHandlers } from '../agent-teams/agent-teams-ipc'
 import { registerPetHandlers } from '../pets/pet'
 import { registerPluginHandlers } from '../plugins'
 import { registerUIHandlers, setTrustedUIRendererWebContentsId } from '../ui'
@@ -236,6 +237,7 @@ export function registerCoreHandlers(
   registerBrowserHandlers(store)
   registerShellHandlers(store)
   registerPetHandlers()
+  registerAgentTeamsHandlers()
   registerSessionHandlers(store, runtime)
   registerUIHandlers(store, { isDashboardPopoutRenderer })
   registerEmulatorFrameStreamHandlers()
