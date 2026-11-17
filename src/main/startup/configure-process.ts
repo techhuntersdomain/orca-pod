@@ -222,7 +222,8 @@ export function configureDevUserDataPath(isDev: boolean): void {
 
   if (!isDev) {
     // The fork keeps its own profile so it never reads or rewrites stock Orca's.
-    if (!process.env.ORCA_USER_DATA_PATH) {
+    // ORCA_USER_DATA_PATH is inherited from any Orca terminal, so only the explicit flag overrides.
+    if (!app.commandLine.hasSwitch('user-data-dir')) {
       app.setPath('userData', join(app.getPath('appData'), APP_FLAVOR.userDataDirName))
     }
     return

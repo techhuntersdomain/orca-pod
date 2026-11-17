@@ -1,6 +1,7 @@
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
 import { useAppStore } from '@/store/index'
+import { activateAndRevealWorktree } from '@/lib/workspace/activation/worktree-activation'
 import { launchAgentInNewTabWithOutcome } from '@/lib/agent-session/launch/new-tab/launch-agent-in-new-tab'
 import { isTuiAgent } from '../../../../shared/agent-launch/catalog/tui-agent-config'
 import { agentLaunchArgs } from '../../../../shared/agent-teams/agent-brief'
@@ -96,5 +97,7 @@ export async function startAgentProfile(agent: AgentProfile, task?: string): Pro
     recordAgentLaunch(agent.id, outcome.surface.tabId, workspace.id)
   }
   useAppStore.getState().closeAgentsPage()
+  // Show the workspace the agent started in; Orca only spawns a tab once its workspace is on screen.
+  activateAndRevealWorktree(workspace.id, { sidebarRevealBehavior: 'auto' })
   return true
 }
