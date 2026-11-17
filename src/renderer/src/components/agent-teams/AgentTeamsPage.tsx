@@ -3,6 +3,7 @@ import { Download, FolderOpen, Network, Pencil, Plus, Users, X } from 'lucide-re
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/class-names'
+import { useTranslate } from '@/i18n/use-translate'
 import { useAppStore } from '@/store/index'
 import type { AgentProfile, AgentTeam } from '../../../../shared/agent-teams/agent-team-types'
 import { AgentCard } from './AgentCard'
@@ -16,10 +17,19 @@ import { useAgentTeamsSnapshot } from './use-agent-teams'
 type View = 'agents' | 'map'
 
 export default function AgentTeamsPage(): React.JSX.Element {
+  const t = useTranslate()
   const closeAgentsPage = useAppStore((s) => s.closeAgentsPage)
   const { snapshot, loading, error } = useAgentTeamsSnapshot()
   const [view, setView] = useState<View>('agents')
-  const [agentDraft, setAgentDraft] = useState<AgentDraft | null>(null)
+  const [agentDraft, setAgentDraftState] = useState<AgentDraft | null>(null)
+  // Remounts the editor each time it opens, so its fields start from the new draft.
+  const [agentEditorKey, setAgentEditorKey] = useState(0)
+  const setAgentDraft = (draft: AgentDraft | null): void => {
+    if (draft) {
+      setAgentEditorKey((key) => key + 1)
+    }
+    setAgentDraftState(draft)
+  }
   const [teamEditor, setTeamEditor] = useState<{ team: AgentTeam | null } | null>(null)
   const { agents, teams } = snapshot
 
@@ -45,17 +55,22 @@ export default function AgentTeamsPage(): React.JSX.Element {
       if (result.agents.length === 0) {
         toast.message(
           result.skipped.length > 0
-            ? 'Your OpenMausBot bots are already here.'
-            : 'No OpenMausBot bots were found.'
+            ? t('agentTeams.page.importAlreadyHere', 'Your OpenMausBot bots are already here.')
+            : t('agentTeams.page.importNoneFound', 'No OpenMausBot bots were found.')
         )
         return
       }
-      toast.success(`Imported ${result.agents.join(', ')}`, {
-        description:
-          'Read-only copy: OpenMausBot is unchanged, and imported routines are not scheduled here, so nothing runs twice.'
-      })
+      toast.success(
+        t('agentTeams.page.imported', 'Imported {{names}}', { names: result.agents.join(', ') }),
+        {
+          description: t(
+            'agentTeams.page.importedDescription',
+            'Read-only copy: OpenMausBot is unchanged, and imported routines are not scheduled here, so nothing runs twice.'
+          )
+        }
+      )
     } catch (caught) {
-      toast.error('Import failed.', {
+      toast.error(t('agentTeams.page.importFailed', 'Import failed.'), {
         description: caught instanceof Error ? caught.message : String(caught)
       })
     }
@@ -67,23 +82,29 @@ export default function AgentTeamsPage(): React.JSX.Element {
         <div className="flex w-full flex-wrap items-center gap-2 px-5 py-3 md:px-8">
           <Button
             variant="ghost"
-            size="icon"
-            className="size-7 shrink-0 rounded-full"
+            size="icon-xs-round"
             onClick={closeAgentsPage}
-            aria-label="Close agents"
+            aria-label={t('agentTeams.page.close', 'Close agents')}
           >
             <X className="size-4" />
           </Button>
-          <h1 className="text-sm font-semibold">Agents</h1>
+          <h1 className="text-sm font-semibold">{t('agentTeams.page.title', 'Agents')}</h1>
           <span className="whitespace-nowrap text-xs text-muted-foreground">
-            {agents.length} agent{agents.length === 1 ? '' : 's'} · {teams.length} team
-            {teams.length === 1 ? '' : 's'}
+            {t('agentTeams.page.agentCount', '{{count}} agents', {
+              count: agents.length,
+              defaultValue_one: '{{count}} agent'
+            })}{' '}
+            ·{' '}
+            {t('agentTeams.page.teamCount', '{{count}} teams', {
+              count: teams.length,
+              defaultValue_one: '{{count}} team'
+            })}
           </span>
           <div className="ml-4 flex rounded-md border border-border p-0.5">
             {(
               [
-                ['agents', 'Agents', Users],
-                ['map', 'Team map', Network]
+                ['agents', t('agentTeams.page.agentsView', 'Agents'), Users],
+                ['map', t('agentTeams.page.mapView', 'Team map'), Network]
               ] as const
             ).map(([key, label, Icon]) => (
               <button
@@ -107,19 +128,19 @@ export default function AgentTeamsPage(): React.JSX.Element {
               onClick={() => void window.api.agentTeams.revealHome()}
             >
               <FolderOpen className="size-3.5" />
-              Files
+              {t('agentTeams.page.files', 'Files')}
             </Button>
             <Button size="sm" variant="ghost" onClick={() => void importMaus()}>
               <Download className="size-3.5" />
-              Import from OpenMausBot
+              {t('agentTeams.page.import', 'Import from OpenMausBot')}
             </Button>
             <Button size="sm" variant="outline" onClick={() => setTeamEditor({ team: null })}>
               <Plus className="size-3.5" />
-              New team
+              {t('agentTeams.page.newTeam', 'New team')}
             </Button>
             <Button size="sm" onClick={() => setAgentDraft({})}>
               <Plus className="size-3.5" />
-              New agent
+              {t('agentTeams.page.newAgent', 'New agent')}
             </Button>
           </div>
         </div>
@@ -130,9 +151,18 @@ export default function AgentTeamsPage(): React.JSX.Element {
       ) : null}
       {snapshot.rejected.length > 0 ? (
         <div className="border-b border-border px-8 py-2 text-xs text-muted-foreground">
-          {snapshot.rejected.length} agent or team file
-          {snapshot.rejected.length === 1 ? ' was' : 's were'} skipped because they are not valid:{' '}
-          {snapshot.rejected.map((r) => `${r.path} (${r.reason.split('\n')[0]})`).join('; ')}
+          {t(
+            'agentTeams.page.rejected',
+            '{{count}} agent or team files were skipped because they are not valid: {{files}}',
+            {
+              count: snapshot.rejected.length,
+              defaultValue_one:
+                '{{count}} agent or team file was skipped because they are not valid: {{files}}',
+              files: snapshot.rejected
+                .map((r) => `${r.path} (${r.reason.split('\n')[0]})`)
+                .join('; ')
+            }
+          )}
         </div>
       ) : null}
 
@@ -143,19 +173,23 @@ export default function AgentTeamsPage(): React.JSX.Element {
           <div className="flex w-full flex-col gap-8 px-5 py-6 md:px-8">
             {agents.length === 0 ? (
               <div className="rounded-lg border border-dashed border-border p-8 text-center">
-                <div className="text-sm font-medium">No agents yet</div>
+                <div className="text-sm font-medium">
+                  {t('agentTeams.page.emptyTitle', 'No agents yet')}
+                </div>
                 <div className="mt-1 text-xs text-muted-foreground">
-                  Give an agent a name, a picture and a personality. It can hire its own sub-agents,
-                  and agents on a team share instructions and a department memory.
+                  {t(
+                    'agentTeams.page.emptyDescription',
+                    'Give an agent a name, a picture and a personality. It can hire its own sub-agents, and agents on a team share instructions and a department memory.'
+                  )}
                 </div>
                 <div className="mt-4 flex justify-center gap-2">
                   <Button size="sm" onClick={() => setAgentDraft({})}>
                     <Plus className="size-3.5" />
-                    New agent
+                    {t('agentTeams.page.newAgent', 'New agent')}
                   </Button>
                   <Button size="sm" variant="outline" onClick={() => void importMaus()}>
                     <Download className="size-3.5" />
-                    Import from OpenMausBot
+                    {t('agentTeams.page.import', 'Import from OpenMausBot')}
                   </Button>
                 </div>
               </div>
@@ -174,7 +208,9 @@ export default function AgentTeamsPage(): React.JSX.Element {
                         )}
                       />
                     ) : null}
-                    <h2 className="text-sm font-semibold">{team ? team.name : 'No team'}</h2>
+                    <h2 className="text-sm font-semibold">
+                      {team ? team.name : t('agentTeams.page.noTeam', 'No team')}
+                    </h2>
                     {team?.description ? (
                       <span className="truncate text-xs text-muted-foreground">
                         {team.description}
@@ -182,23 +218,17 @@ export default function AgentTeamsPage(): React.JSX.Element {
                     ) : null}
                     {team ? (
                       <>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 px-2 text-xs"
-                          onClick={() => setTeamEditor({ team })}
-                        >
+                        <Button size="xs" variant="ghost" onClick={() => setTeamEditor({ team })}>
                           <Pencil className="size-3" />
-                          Instructions & memory
+                          {t('agentTeams.page.teamInstructions', 'Instructions & memory')}
                         </Button>
                         <Button
-                          size="sm"
+                          size="xs"
                           variant="ghost"
-                          className="h-6 px-2 text-xs"
                           onClick={() => setAgentDraft({ teamId: team.id })}
                         >
                           <Plus className="size-3" />
-                          Add member
+                          {t('agentTeams.page.addMember', 'Add member')}
                         </Button>
                       </>
                     ) : null}
@@ -223,7 +253,9 @@ export default function AgentTeamsPage(): React.JSX.Element {
                       ))}
                     </div>
                   ) : (
-                    <div className="text-xs text-muted-foreground">No members yet.</div>
+                    <div className="text-xs text-muted-foreground">
+                      {t('agentTeams.page.noMembers', 'No members yet.')}
+                    </div>
                   )}
                 </section>
               ) : null
@@ -233,6 +265,7 @@ export default function AgentTeamsPage(): React.JSX.Element {
       </div>
 
       <AgentEditorDialog
+        key={agentEditorKey}
         draft={agentDraft}
         agents={agents}
         teams={teams}

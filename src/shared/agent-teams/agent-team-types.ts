@@ -1,22 +1,34 @@
 import { z } from 'zod'
 
 const id = z.string().regex(/^[a-z0-9][a-z0-9-]{0,63}$/)
+/** Only names the app itself writes, so an agent-written file can never point a delete outside its folder. */
+export const AVATAR_FILE_PATTERN = /^avatar-\d{1,16}\.(?:png|jpe?g|gif|webp)$/
+/** One CLI token: an agent-written value can never smuggle in a second flag. */
+const cliToken = z.string().regex(/^[\w.:/[\]-]{1,80}$/)
 
-/** Agents and sub-agents may write these files; every read goes through the schema. */
+/** Agents and sub-agents may write these files; every read goes through the schema, and fields it does not know are dropped on the next save. */
 export const AgentProfileSchema = z.object({
   id,
   name: z.string().trim().min(1).max(60),
   title: z.string().max(120).default(''),
   soul: z.string().max(40_000).default(''),
   color: z.string().max(24).default('violet'),
-  avatarFile: z.string().max(80).nullable().default(null),
-  agent: z.string().max(40).default('claude'),
-  model: z.string().max(80).nullable().default(null),
+  avatarFile: z.string().regex(AVATAR_FILE_PATTERN).nullable().default(null),
+  agent: z
+    .string()
+    .regex(/^[a-z0-9-]{1,40}$/)
+    .default('claude'),
+  model: cliToken.nullable().default(null),
   folder: z.string().max(1024).nullable().default(null),
   teamId: id.nullable().default(null),
   parentId: id.nullable().default(null),
   commands: z
-    .array(z.object({ name: z.string().min(1).max(40), prompt: z.string().max(8000) }))
+    .array(
+      z.object({
+        name: z.string().min(1).max(40),
+        prompt: z.string().max(8000)
+      })
+    )
     .max(40)
     .default([]),
   routines: z
@@ -55,6 +67,12 @@ export type AgentTeamsSnapshot = {
   /** Files that failed validation, so a bad write by an agent is visible instead of silently lost. */
   rejected: { path: string; reason: string }[]
   home: string
+}
+
+export type OpenMausBotImportResult = {
+  agents: string[]
+  teams: string[]
+  skipped: string[]
 }
 
 export type AgentLaunchBrief = {

@@ -1,4 +1,5 @@
 import { toast } from 'sonner'
+import { translate } from '@/i18n/i18n'
 import { useAppStore } from '@/store/index'
 import { launchAgentInNewTabWithOutcome } from '@/lib/agent-session/launch/new-tab/launch-agent-in-new-tab'
 import { isTuiAgent } from '../../../../shared/agent-launch/catalog/tui-agent-config'
@@ -6,33 +7,75 @@ import { agentLaunchArgs } from '../../../../shared/agent-teams/agent-brief'
 import type { AgentProfile } from '../../../../shared/agent-teams/agent-team-types'
 import { recordAgentLaunch } from './use-agent-teams'
 import { createNonSecureContextUuid } from '../../../../shared/non-secure-context-uuid'
+import { normalizeRuntimePathForComparison } from '../../../../shared/cross-platform-path'
+import { LOCAL_EXECUTION_HOST_ID } from '../../../../shared/execution-host'
 
 function sameFolder(a: string, b: string): boolean {
-  return a.replace(/\/+$/, '') === b.replace(/\/+$/, '')
+  return normalizeRuntimePathForComparison(a) === normalizeRuntimePathForComparison(b)
 }
 
 /** The agent's own folder when Orca has it open as a workspace, else the workspace in front. */
-export function workspaceForAgent(agent: AgentProfile): { id: string; label: string } | null {
+export function workspaceForAgent(
+  agent: AgentProfile
+): { id: string; label: string; remote: boolean } | null {
   const state = useAppStore.getState()
   const all = state.allWorktrees()
   if (agent.folder) {
     const own = all.find((w) => sameFolder(w.path, agent.folder!))
     if (own) {
-      return { id: own.id, label: own.displayName || own.path }
+      return { id: own.id, label: own.displayName || own.path, remote: isRemote(own.hostId) }
     }
   }
   const active = state.activeWorktreeId ? all.find((w) => w.id === state.activeWorktreeId) : null
-  return active ? { id: active.id, label: active.displayName || active.path } : null
+  return active
+    ? { id: active.id, label: active.displayName || active.path, remote: isRemote(active.hostId) }
+    : null
+}
+
+function isRemote(hostId: string | undefined): boolean {
+  return hostId !== undefined && hostId !== LOCAL_EXECUTION_HOST_ID
 }
 
 export async function startAgentProfile(agent: AgentProfile, task?: string): Promise<boolean> {
   const workspace = workspaceForAgent(agent)
   if (!workspace) {
-    toast.error(`Open a project or folder first, then start ${agent.name}.`, {
-      description: agent.folder
-        ? `${agent.name} works in ${agent.folder}. Add that folder in the sidebar to start there.`
-        : 'Agents start in the workspace you have open.'
-    })
+    toast.error(
+      translate(
+        'agentTeams.launch.noWorkspace',
+        'Open a project or folder first, then start {{name}}.',
+        { name: agent.name }
+      ),
+      {
+        description: agent.folder
+          ? translate(
+              'agentTeams.launch.noWorkspaceFolder',
+              '{{name}} works in {{folder}}. Add that folder in the sidebar to start there.',
+              { name: agent.name, folder: agent.folder }
+            )
+          : translate(
+              'agentTeams.launch.noWorkspaceDefault',
+              'Agents start in the workspace you have open.'
+            )
+      }
+    )
+    return false
+  }
+  if (workspace.remote) {
+    // The brief and memory files live on this computer, where a remote host cannot read them.
+    toast.error(
+      translate(
+        'agentTeams.launch.remoteWorkspace',
+        '{{name}} can only start in a workspace on this computer.',
+        { name: agent.name }
+      ),
+      {
+        description: translate(
+          'agentTeams.launch.remoteWorkspaceDescription',
+          '{{workspace}} runs on another machine. Open a local folder first.',
+          { workspace: workspace.label }
+        )
+      }
+    )
     return false
   }
   const brief = await window.api.agentTeams.prepareLaunch(agent.id, task)

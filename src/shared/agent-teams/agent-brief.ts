@@ -1,3 +1,4 @@
+import { quoteStartupArg } from '../agent-launch/startup/tui-agent-startup-shell'
 import type { AgentProfile, AgentTeam } from './agent-team-types'
 
 export type AgentBriefPaths = {
@@ -67,18 +68,23 @@ export function agentFirstMessage(agent: AgentProfile, briefPath: string, task?:
     : `${intro} Then say hello in one line and wait.`
 }
 
-/** Claude reads the brief as real system instructions; other CLIs get it through the first message only. */
+/** Claude reads the brief as real system instructions; other CLIs get it through the first message only.
+ * Every value is quoted, so a home folder with spaces stays one argument. */
 export function agentLaunchArgs(
   agent: AgentProfile,
   briefPath: string,
   dirs: readonly string[]
 ): string | null {
+  const q = (value: string): string => quoteStartupArg(value, 'posix')
   if (agent.agent !== 'claude') {
-    return agent.model && agent.agent === 'codex' ? `-m ${agent.model}` : null
+    return agent.model && agent.agent === 'codex' ? `-m ${q(agent.model)}` : null
   }
-  const parts = [`--append-system-prompt-file ${briefPath}`, ...dirs.map((d) => `--add-dir ${d}`)]
+  const parts = [
+    `--append-system-prompt-file ${q(briefPath)}`,
+    ...dirs.map((d) => `--add-dir ${q(d)}`)
+  ]
   if (agent.model) {
-    parts.push(`--model ${agent.model}`)
+    parts.push(`--model ${q(agent.model)}`)
   }
   return parts.join(' ')
 }

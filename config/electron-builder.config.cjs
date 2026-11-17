@@ -123,7 +123,7 @@ const devChannelRepo = isHourlyChannel
     : isAdhocChannel
       ? 'orca-adhoc'
       : null
-// Orca Teams identity; keep in step with src/shared/app-flavor.ts.
+// Orca Pod identity; keep in step with src/shared/app-flavor.ts. The ids keep the first name, orca-teams.
 const appId = 'com.frisky.orca-teams'
 const featureWallResources = {
   from: 'resources/onboarding/feature-wall',
@@ -252,8 +252,8 @@ const ORCA_MAC_TEAM_ID = '6CX3WHS9HZ'
 /** @type {import('electron-builder').Configuration} */
 module.exports = {
   appId,
-  productName: 'Orca Teams',
-  protocols: [{ name: 'Orca Teams', schemes: ['orca-teams'] }],
+  productName: 'Orca Pod',
+  protocols: [{ name: 'Orca Pod', schemes: ['orca-teams'] }],
   toolsets: { appimage: '1.0.3' },
   // Electron names the macOS Keychain item "<package name> Safe Storage" before ready; stock Orca owns "orca Safe Storage".
   extraMetadata: {
@@ -560,7 +560,7 @@ module.exports = {
     }
   },
   win: {
-    executableName: 'Orca Teams',
+    executableName: 'Orca Pod',
     // SignPath signs Windows installers after packaging, so set release publisherName explicitly.
     // Unsigned dev channels omit it or updater signature checks reject dev updates and return to stable.
     // Sign hook signs nothing: it relays transient NSIS uninstaller files to CI SignPath; unset relay env leaves local/dev builds inert.

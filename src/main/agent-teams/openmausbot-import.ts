@@ -1,48 +1,70 @@
 import { readFile, readdir } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { basename, join } from 'node:path'
-import { slugForName } from '../../shared/agent-teams/agent-team-types'
+import { z } from 'zod'
+import {
+  slugForName,
+  type OpenMausBotImportResult
+} from '../../shared/agent-teams/agent-team-types'
 import {
   readAgentTeamsSnapshot,
+  readMemory,
   saveAgent,
   saveTeam,
   setAgentAvatarFromFile,
-  writeMemory
+  writeMemoryIfUnchanged
 } from './agent-team-store'
 
-type MausBot = {
-  id: string
-  name: string
-  title?: string
-  description?: string
-  soul?: string
-  color?: string
-  section?: string
-  avatarUrl?: string
-  cwd?: string
-  modelSelection?: { instanceId?: string; model?: string }
+const optionalText = z.string().optional().catch(undefined)
+const MausBotSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  title: optionalText,
+  description: optionalText,
+  soul: optionalText,
+  color: optionalText,
+  section: optionalText,
+  avatarUrl: optionalText,
+  cwd: optionalText,
+  modelSelection: z.object({ instanceId: optionalText }).optional().catch(undefined)
+})
+type MausBot = z.infer<typeof MausBotSchema>
+
+const MausRoutineSchema = z.object({
+  name: z.string(),
+  prompt: z.string(),
+  botId: optionalText,
+  schedule: z
+    .object({
+      type: optionalText,
+      time: optionalText,
+      everyMinutes: z.number().optional().catch(undefined),
+      weekdays: z.array(z.number()).optional().catch(undefined)
+    })
+    .optional()
+    .catch(undefined)
+})
+type MausRoutine = z.infer<typeof MausRoutineSchema>
+
+/** Entries that do not match are left out; the rest import. */
+function validEntries<T>(raw: unknown, schema: z.ZodType<T>): T[] {
+  return Array.isArray(raw)
+    ? raw.flatMap((entry) => {
+        const parsed = schema.safeParse(entry)
+        return parsed.success ? [parsed.data] : []
+      })
+    : []
 }
 
-type MausRoutine = {
-  name: string
-  prompt: string
-  botId?: string
-  schedule?: { type?: string; time?: string; everyMinutes?: number; weekdays?: number[] }
-}
+const mausHome = (): string => process.env.OPENMAUSBOT_HOME || join(homedir(), '.openmausbot')
+const SAFE_BOT_ID = /^[\w-]{1,80}$/
 
-export type OpenMausBotImportResult = {
-  agents: string[]
-  teams: string[]
-  skipped: string[]
-}
-
-const MAUS_HOME = join(homedir(), '.openmausbot')
-
-async function readJson<T>(path: string, fallback: T): Promise<T> {
+async function readJson(path: string): Promise<unknown> {
   try {
-    return JSON.parse(await readFile(path, 'utf8')) as T
+    const parsed: unknown = JSON.parse(await readFile(path, 'utf8'))
+    return parsed
   } catch {
-    return fallback
+    return null
   }
 }
 
@@ -74,27 +96,51 @@ function commandPrompt(skill: string): string {
 
 /** Reads ~/.openmausbot and never writes there. Re-running skips bots already imported. */
 export async function importFromOpenMausBot(): Promise<OpenMausBotImportResult> {
-  const bots = await readJson<MausBot[]>(join(MAUS_HOME, 'bots.json'), [])
-  const routines =
-    (await readJson<{ routines?: MausRoutine[] }>(join(MAUS_HOME, 'routines.json'), {})).routines ??
-    []
-  const sectionContexts = await readJson<{ contexts?: Record<string, string> }>(
-    join(MAUS_HOME, 'section-contexts.json'),
-    {}
+  const bots = validEntries(await readJson(join(mausHome(), 'bots.json')), MausBotSchema)
+  const routines = validEntries(
+    z
+      .object({ routines: z.unknown() })
+      .catch({ routines: [] })
+      .parse(await readJson(join(mausHome(), 'routines.json'))).routines,
+    MausRoutineSchema
   )
+  const sectionContexts = z
+    .object({ contexts: z.record(z.string(), z.string()).optional() })
+    .catch({})
+    .parse(await readJson(join(mausHome(), 'section-contexts.json')))
   const snapshot = await readAgentTeamsSnapshot()
-  const result: OpenMausBotImportResult = { agents: [], teams: [], skipped: [] }
+  const result: OpenMausBotImportResult = {
+    agents: [],
+    teams: [],
+    skipped: []
+  }
   const takenAgents = new Set(snapshot.agents.map((a) => a.id))
   const takenTeams = new Set(snapshot.teams.map((t) => t.id))
   const teamIdBySection = new Map(snapshot.teams.map((t) => [t.name, t.id]))
   const now = Date.now()
 
   for (const bot of bots) {
+    if (!SAFE_BOT_ID.test(bot.id)) {
+      result.skipped.push(bot.name)
+      continue
+    }
     const origin = `openmausbot:${bot.id}`
     if (snapshot.agents.some((a) => a.origin === origin)) {
       result.skipped.push(bot.name)
       continue
     }
+    try {
+      await importBot(bot, origin)
+      result.agents.push(bot.name)
+    } catch (error) {
+      console.warn(`[agent-teams] could not import ${bot.name}:`, error)
+      result.skipped.push(bot.name)
+    }
+  }
+  return result
+
+  // One bot per call, so a bad value in one stops only that bot.
+  async function importBot(bot: MausBot, origin: string): Promise<void> {
     let teamId: string | null = null
     if (bot.section) {
       teamId = teamIdBySection.get(bot.section) ?? null
@@ -114,15 +160,18 @@ export async function importFromOpenMausBot(): Promise<OpenMausBotImportResult> 
       }
     }
 
-    const workspace = join(MAUS_HOME, 'workspaces', bot.id)
+    const workspace = join(mausHome(), 'workspaces', bot.id)
     const commands: { name: string; prompt: string }[] = []
     try {
       for (const name of await readdir(join(workspace, 'skills'))) {
         const skill = await readFile(join(workspace, 'skills', name, 'SKILL.md'), 'utf8').catch(
           () => ''
         )
-        if (skill) {
-          commands.push({ name, prompt: commandPrompt(skill).slice(0, 8000) })
+        if (skill && commands.length < 40) {
+          commands.push({
+            name: name.slice(0, 40),
+            prompt: commandPrompt(skill).slice(0, 8000)
+          })
         }
       }
     } catch {
@@ -137,7 +186,7 @@ export async function importFromOpenMausBot(): Promise<OpenMausBotImportResult> 
       name: bot.name.slice(0, 60),
       title: (bot.title ?? '').slice(0, 120),
       soul: [bot.description, bot.soul].filter(Boolean).join('\n\n').slice(0, 40_000),
-      color: bot.color ?? 'violet',
+      color: (bot.color ?? 'violet').slice(0, 24),
       agent: engine === 'hermes' || engine === 'codex' ? engine : 'claude',
       model: null,
       folder: bot.cwd ?? null,
@@ -146,6 +195,7 @@ export async function importFromOpenMausBot(): Promise<OpenMausBotImportResult> 
       // Imported routines are notes only: OpenMausBot (and Orca) already run them; scheduling here would double-run.
       routines: routines
         .filter((r) => r.botId === bot.id)
+        .slice(0, 40)
         .map((r) => ({
           name: r.name.slice(0, 80),
           prompt: r.prompt.slice(0, 8000),
@@ -160,15 +210,13 @@ export async function importFromOpenMausBot(): Promise<OpenMausBotImportResult> 
 
     const memory = await readFile(join(workspace, 'MEMORY.md'), 'utf8').catch(() => '')
     if (memory) {
-      await writeMemory('agent', id, memory)
+      await writeMemoryIfUnchanged('agent', id, await readMemory('agent', id), memory)
     }
     const attachment = bot.avatarUrl?.startsWith('/api/attachments/')
-      ? join(MAUS_HOME, 'attachments', basename(bot.avatarUrl))
+      ? join(mausHome(), 'attachments', basename(bot.avatarUrl))
       : null
     if (attachment) {
       await setAgentAvatarFromFile(id, attachment).catch(() => undefined)
     }
-    result.agents.push(bot.name)
   }
-  return result
 }

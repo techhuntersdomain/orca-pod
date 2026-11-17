@@ -12,6 +12,7 @@ import { applyProxyToElectronUpdaterSession } from './electron-updater-proxy-ses
 import { updaterErrorMessage } from './updater-coded-error'
 import { updaterCodedMessage } from '../../../shared/updater-failure-copy'
 import { normalizeUpdateDelayDays } from '../../../shared/update-delay'
+import { APP_FLAVOR } from '../../../shared/app-flavor'
 import {
   checkForUpdatesFromMenu,
   dismissAvailableUpdate,
@@ -61,7 +62,10 @@ function buildUpdaterSetupOptions(store: Store, options?: UpdaterSetupHooks): Up
     setPendingUpdateNudgeId: (id) => {
       // Applying a new campaign clears the hidden card; clearing a campaign must preserve dismissal.
       if (id) {
-        store.updateUI({ pendingUpdateNudgeId: id, dismissedUpdateVersion: null })
+        store.updateUI({
+          pendingUpdateNudgeId: id,
+          dismissedUpdateVersion: null
+        })
       } else {
         store.updateUI({ pendingUpdateNudgeId: null })
       }
@@ -81,6 +85,10 @@ function setupAutoUpdaterWithAppProxy(
   store: Store,
   options?: UpdaterSetupHooks
 ): void {
+  // The fork must never update itself into stock Orca; upstream changes arrive by merge.
+  if (!APP_FLAVOR.updatesEnabled) {
+    return
+  }
   // Starts synchronously, so the session request guard holds the first update check until it settles.
   void applyProxyToElectronUpdaterSession(store.getSettings())
   setupAutoUpdater(mainWindow, buildUpdaterSetupOptions(store, options))
@@ -181,13 +189,19 @@ export function registerUpdaterHandlers(_store: Store): void {
       options?: { force?: boolean }
     ): Promise<ReleaseBuildListResult> => {
       if (!RELEASE_CHANNELS.includes(channel)) {
-        return { ok: false, channel, ...updaterCodedMessage('unknownReleaseChannel', { channel }) }
+        return {
+          ok: false,
+          channel,
+          ...updaterCodedMessage('unknownReleaseChannel', { channel })
+        }
       }
       try {
         return {
           ok: true,
           channel,
-          builds: await listAvailableReleaseBuilds(channel, { force: options?.force === true })
+          builds: await listAvailableReleaseBuilds(channel, {
+            force: options?.force === true
+          })
         }
       } catch (error) {
         // Return expected network/rate-limit failures as data for the build picker.

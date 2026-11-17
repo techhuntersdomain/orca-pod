@@ -221,7 +221,7 @@ export function configureDevUserDataPath(isDev: boolean): void {
   }
 
   if (!isDev) {
-    // Orca Agents keeps its own profile so it never reads or rewrites stock Orca's.
+    // The fork keeps its own profile so it never reads or rewrites stock Orca's.
     if (!process.env.ORCA_USER_DATA_PATH) {
       app.setPath('userData', join(app.getPath('appData'), APP_FLAVOR.userDataDirName))
     }

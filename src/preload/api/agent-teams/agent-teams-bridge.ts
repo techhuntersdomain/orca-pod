@@ -10,7 +10,8 @@ export const agentTeamsApi = {
   readAvatar: (id) => ipcRenderer.invoke('agentTeams:readAvatar', id),
   pickAvatar: (id) => ipcRenderer.invoke('agentTeams:pickAvatar', id),
   readMemory: (kind, id) => ipcRenderer.invoke('agentTeams:readMemory', kind, id),
-  writeMemory: (kind, id, text) => ipcRenderer.invoke('agentTeams:writeMemory', kind, id, text),
+  writeMemory: (kind, id, expected, text) =>
+    ipcRenderer.invoke('agentTeams:writeMemory', kind, id, expected, text),
   prepareLaunch: (id, task) => ipcRenderer.invoke('agentTeams:prepareLaunch', id, task),
   importOpenMausBot: () => ipcRenderer.invoke('agentTeams:importOpenMausBot'),
   revealHome: () => ipcRenderer.invoke('agentTeams:revealHome'),

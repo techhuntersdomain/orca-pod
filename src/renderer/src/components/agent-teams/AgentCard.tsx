@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button'
 import { AgentStateDot, type AgentDotState } from '@/components/AgentStateDot'
 import { useAppStore } from '@/store/index'
 import { cn } from '@/lib/class-names'
+import { useTranslate } from '@/i18n/use-translate'
 import type { AgentProfile } from '../../../../shared/agent-teams/agent-team-types'
 import { AgentAvatar } from './AgentAvatar'
 import { useLaunchedAgentTabs } from './use-agent-teams'
@@ -52,6 +53,7 @@ export function AgentCard({
   onAddSubAgent: (parent: AgentProfile) => void
   nested?: boolean
 }): React.JSX.Element {
+  const t = useTranslate()
   const state = useAgentProfileState(agent.id)
   return (
     <div
@@ -74,16 +76,24 @@ export function AgentCard({
             <span className="rounded bg-muted px-1.5 py-0.5">{engineLabel(agent.agent)}</span>
             {agent.commands.length > 0 ? (
               <span className="rounded bg-muted px-1.5 py-0.5">
-                {agent.commands.length} command{agent.commands.length === 1 ? '' : 's'}
+                {t('agentTeams.agentCard.commandCount', '{{count}} commands', {
+                  count: agent.commands.length,
+                  defaultValue_one: '{{count}} command'
+                })}
               </span>
             ) : null}
             {agent.routines.length > 0 ? (
               <span className="rounded bg-muted px-1.5 py-0.5">
-                {agent.routines.length} routine{agent.routines.length === 1 ? '' : 's'}
+                {t('agentTeams.agentCard.routineCount', '{{count}} routines', {
+                  count: agent.routines.length,
+                  defaultValue_one: '{{count}} routine'
+                })}
               </span>
             ) : null}
             {agent.createdBy !== 'person' && agent.createdBy !== 'openmausbot-import' ? (
-              <span className="rounded bg-muted px-1.5 py-0.5">hired by {agent.createdBy}</span>
+              <span className="rounded bg-muted px-1.5 py-0.5">
+                {t('agentTeams.agentCard.hiredBy', 'hired by {{name}}', { name: agent.createdBy })}
+              </span>
             ) : null}
           </div>
         </div>
@@ -91,20 +101,22 @@ export function AgentCard({
       <div className="flex flex-wrap items-center gap-1.5">
         <Button size="sm" onClick={() => onStart(agent)}>
           <Play className="size-3.5" />
-          Start
+          {t('agentTeams.agentCard.start', 'Start')}
         </Button>
         <Button size="sm" variant="outline" onClick={() => onEdit(agent)}>
           <Pencil className="size-3.5" />
-          Edit
+          {t('agentTeams.agentCard.edit', 'Edit')}
         </Button>
         <Button
           size="sm"
           variant="ghost"
           onClick={() => onAddSubAgent(agent)}
-          aria-label={`Add a sub-agent under ${agent.name}`}
+          aria-label={t('agentTeams.agentCard.addSubAgentLabel', 'Add a sub-agent under {{name}}', {
+            name: agent.name
+          })}
         >
           <UserPlus className="size-3.5" />
-          Sub-agent
+          {t('agentTeams.agentCard.subAgent', 'Sub-agent')}
         </Button>
       </div>
       {subAgents.length > 0 ? (

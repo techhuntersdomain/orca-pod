@@ -12,7 +12,7 @@ import {
   saveTeam,
   setAgentAvatarFromFile,
   watchAgentTeams,
-  writeMemory
+  writeMemoryIfUnchanged
 } from '../../agent-teams/agent-team-store'
 import { importFromOpenMausBot } from '../../agent-teams/openmausbot-import'
 
@@ -59,12 +59,15 @@ export function registerAgentTeamsHandlers(): void {
   ipcMain.handle('agentTeams:readMemory', (_event, kind: unknown, id: unknown) =>
     readMemory(MemoryKindSchema.parse(kind), IdSchema.parse(id))
   )
-  ipcMain.handle('agentTeams:writeMemory', (_event, kind: unknown, id: unknown, text: unknown) =>
-    writeMemory(
-      MemoryKindSchema.parse(kind),
-      IdSchema.parse(id),
-      z.string().max(200_000).parse(text)
-    )
+  ipcMain.handle(
+    'agentTeams:writeMemory',
+    (_event, kind: unknown, id: unknown, expected: unknown, text: unknown) =>
+      writeMemoryIfUnchanged(
+        MemoryKindSchema.parse(kind),
+        IdSchema.parse(id),
+        z.string().max(200_000).parse(expected),
+        z.string().max(200_000).parse(text)
+      )
   )
   ipcMain.handle('agentTeams:prepareLaunch', (_event, id: unknown, task: unknown) =>
     prepareAgentLaunch(

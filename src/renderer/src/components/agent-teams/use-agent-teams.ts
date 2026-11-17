@@ -1,7 +1,13 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import type { AgentTeamsSnapshot } from '../../../../shared/agent-teams/agent-team-types'
+import { resolveAgentLinks } from '../../../../shared/agent-teams/agent-links'
 
-const EMPTY: AgentTeamsSnapshot = { agents: [], teams: [], rejected: [], home: '' }
+const EMPTY: AgentTeamsSnapshot = {
+  agents: [],
+  teams: [],
+  rejected: [],
+  home: ''
+}
 
 export function useAgentTeamsSnapshot(): {
   snapshot: AgentTeamsSnapshot
@@ -14,7 +20,11 @@ export function useAgentTeamsSnapshot(): {
   const [error, setError] = useState<string | null>(null)
   const refresh = useCallback(async () => {
     try {
-      setSnapshot(await window.api.agentTeams.snapshot())
+      const next = await window.api.agentTeams.snapshot()
+      setSnapshot({
+        ...next,
+        agents: resolveAgentLinks(next.agents, next.teams)
+      })
       setError(null)
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught))
@@ -36,6 +46,10 @@ export function useAgentAvatarUrl(agentId: string, avatarFile: string | null): s
   useEffect(() => {
     let cancelled = false
     if (!avatarFile) {
+      if (current.current) {
+        URL.revokeObjectURL(current.current)
+        current.current = null
+      }
       setUrl(null)
       return
     }
@@ -73,7 +87,10 @@ let launchedTabs: LaunchedTabs = {}
 const listeners = new Set<() => void>()
 
 export function recordAgentLaunch(agentId: string, tabId: string, worktreeId: string): void {
-  launchedTabs = { ...launchedTabs, [agentId]: { tabId, worktreeId, startedAt: Date.now() } }
+  launchedTabs = {
+    ...launchedTabs,
+    [agentId]: { tabId, worktreeId, startedAt: Date.now() }
+  }
   for (const listener of listeners) {
     listener()
   }

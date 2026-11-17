@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { AgentStateDot } from '@/components/AgentStateDot'
+import { useTranslate } from '@/i18n/use-translate'
 import type { AgentProfile, AgentTeam } from '../../../../shared/agent-teams/agent-team-types'
 import { AgentAvatar, agentColor } from './AgentAvatar'
 import { useAgentProfileState } from './AgentCard'
@@ -35,7 +36,8 @@ function treeWidth(
 /** Teams side by side; inside a team each top agent heads a tree of the sub-agents it hired. */
 export function layoutTeamMap(
   agents: readonly AgentProfile[],
-  teams: readonly AgentTeam[]
+  teams: readonly AgentTeam[],
+  noTeamLabel: string
 ): { placed: Placed[]; columns: TeamColumn[]; width: number; height: number; rootX: number } {
   const groups: { id: string; name: string; color: string; tops: AgentProfile[] }[] = teams.map(
     (t) => ({
@@ -53,7 +55,12 @@ export function layoutTeamMap(
     (a) => !a.teamId && (!a.parentId || agents.find((p) => p.id === a.parentId)?.teamId)
   )
   if (loose.length > 0) {
-    groups.push({ id: '', name: 'No team', color: 'slate', tops: loose })
+    groups.push({
+      id: '',
+      name: noTeamLabel,
+      color: 'slate',
+      tops: loose
+    })
   }
   const placed: Placed[] = []
   const columns: TeamColumn[] = []
@@ -159,11 +166,16 @@ export function AgentTeamMap({
   teams: readonly AgentTeam[]
   onOpenAgent: (agent: AgentProfile) => void
 }): React.JSX.Element {
-  const layout = useMemo(() => layoutTeamMap(agents, teams), [agents, teams])
+  const t = useTranslate()
+  const noTeamLabel = t('agentTeams.map.noTeam', 'No team')
+  const layout = useMemo(
+    () => layoutTeamMap(agents, teams, noTeamLabel),
+    [agents, teams, noTeamLabel]
+  )
   if (agents.length === 0 && teams.length === 0) {
     return (
       <div className="p-10 text-center text-sm text-muted-foreground">
-        No agents yet. Create one, or import your OpenMausBot bots.
+        {t('agentTeams.map.empty', 'No agents yet. Create one, or import your OpenMausBot bots.')}
       </div>
     )
   }
@@ -175,7 +187,8 @@ export function AgentTeamMap({
           <path
             key={`root-${column.id}`}
             d={`M ${layout.rootX} ${TOP + 16} C ${layout.rootX} ${TOP + 50}, ${column.x} ${teamY - 50}, ${column.x} ${teamY - 18}`}
-            className="fill-none stroke-border"
+            fill="none"
+            className="stroke-border"
             strokeWidth={1.5}
           />
         ))}
@@ -183,14 +196,15 @@ export function AgentTeamMap({
           <path
             key={`edge-${p.agent.id}`}
             d={`M ${p.parentX} ${p.parentY + 16} C ${p.parentX} ${p.parentY + 60}, ${p.x} ${p.y - 70}, ${p.x} ${p.y - NODE / 2}`}
-            className="fill-none stroke-border"
+            fill="none"
+            className="stroke-border"
             strokeWidth={1.5}
             strokeDasharray={p.agent.parentId ? '4 4' : undefined}
           />
         ))}
         <foreignObject x={layout.rootX - 40} y={TOP - 14} width={80} height={32}>
           <div className="flex h-full items-center justify-center rounded-full border border-border bg-card text-xs font-semibold text-foreground">
-            You
+            {t('agentTeams.map.you', 'You')}
           </div>
         </foreignObject>
         {layout.columns.map((column) => (

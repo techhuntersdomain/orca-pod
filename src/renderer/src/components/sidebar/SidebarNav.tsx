@@ -143,7 +143,7 @@ const SidebarNav = React.memo(function SidebarNav() {
           className={cn('size-4 shrink-0', !agentsActive && 'text-worktree-sidebar-foreground/30')}
           strokeWidth={agentsActive ? 2.25 : 1.75}
         />
-        <span className="flex-1">Agents</span>
+        <span className="flex-1">{t('auto.components.sidebar.SidebarNav.agents', 'Agents')}</span>
       </button>
       <SidebarTaskNavButton />
       {showArtifactsButton ? (
