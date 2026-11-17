@@ -3,6 +3,8 @@ export const APP_FLAVOR = {
   displayName: 'Orca Teams',
   userDataDirName: 'orca-teams',
   bundleId: 'com.frisky.orca-teams',
+  /** Keep in step with config/scripts/native-build/macos/build-computer-macos.mjs; TCC grants follow this id. */
+  computerUseBundleId: 'com.frisky.orca-teams.computer-use',
   protocolScheme: 'orca-teams',
   cliName: 'orca-teams',
   /** Agent and team files live here (no spaces, so CLIs take the paths as plain flags). */

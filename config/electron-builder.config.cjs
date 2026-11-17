@@ -255,11 +255,15 @@ module.exports = {
   productName: 'Orca Teams',
   protocols: [{ name: 'Orca Teams', schemes: ['orca-teams'] }],
   toolsets: { appimage: '1.0.3' },
-  ...(devChannelBuildVersion
-    ? { extraMetadata: { version: devChannelBuildVersion } }
-    : localBuildVersion
-      ? { extraMetadata: { version: localBuildVersion } }
-      : {}),
+  // Electron names the macOS Keychain item "<package name> Safe Storage" before ready; stock Orca owns "orca Safe Storage".
+  extraMetadata: {
+    name: 'orca-teams',
+    ...(devChannelBuildVersion
+      ? { version: devChannelBuildVersion }
+      : localBuildVersion
+        ? { version: localBuildVersion }
+        : {})
+  },
   directories: {
     buildResources: 'resources/build'
   },
