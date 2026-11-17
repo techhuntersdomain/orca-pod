@@ -88,7 +88,7 @@ export function AgentCard({
           </div>
         </div>
       </div>
-      <div className="flex items-center gap-1.5">
+      <div className="flex flex-wrap items-center gap-1.5">
         <Button size="sm" onClick={() => onStart(agent)}>
           <Play className="size-3.5" />
           Start

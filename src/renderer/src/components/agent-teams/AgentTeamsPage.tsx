@@ -64,7 +64,7 @@ export default function AgentTeamsPage(): React.JSX.Element {
   return (
     <div className="flex h-full min-h-0 flex-col bg-background">
       <header className="shrink-0 border-b border-border">
-        <div className="flex w-full items-center gap-2 px-5 py-3 md:px-8">
+        <div className="flex w-full flex-wrap items-center gap-2 px-5 py-3 md:px-8">
           <Button
             variant="ghost"
             size="icon"
@@ -75,7 +75,7 @@ export default function AgentTeamsPage(): React.JSX.Element {
             <X className="size-4" />
           </Button>
           <h1 className="text-sm font-semibold">Agents</h1>
-          <span className="text-xs text-muted-foreground">
+          <span className="whitespace-nowrap text-xs text-muted-foreground">
             {agents.length} agent{agents.length === 1 ? '' : 's'} · {teams.length} team
             {teams.length === 1 ? '' : 's'}
           </span>
@@ -91,7 +91,7 @@ export default function AgentTeamsPage(): React.JSX.Element {
                 type="button"
                 onClick={() => setView(key)}
                 className={cn(
-                  'flex items-center gap-1.5 rounded px-2.5 py-1 text-xs',
+                  'flex items-center gap-1.5 whitespace-nowrap rounded px-2.5 py-1 text-xs',
                   view === key ? 'bg-muted font-medium text-foreground' : 'text-muted-foreground'
                 )}
               >
@@ -100,7 +100,7 @@ export default function AgentTeamsPage(): React.JSX.Element {
               </button>
             ))}
           </div>
-          <div className="ml-auto flex items-center gap-1.5">
+          <div className="ml-auto flex flex-wrap items-center gap-1.5">
             <Button
               size="sm"
               variant="ghost"
@@ -204,7 +204,7 @@ export default function AgentTeamsPage(): React.JSX.Element {
                     ) : null}
                   </div>
                   {members.length > 0 ? (
-                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+                    <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-3">
                       {members.map((agent) => (
                         <AgentCard
                           key={agent.id}

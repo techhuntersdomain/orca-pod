@@ -71,10 +71,13 @@ async function readEntries<T>(
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
         continue
       }
-      rejected.push({
-        path,
-        reason: error instanceof Error ? error.message.slice(0, 300) : 'unreadable'
-      })
+      const issues = (error as { issues?: { path: PropertyKey[]; message: string }[] }).issues
+      const reason = issues
+        ? issues.map((i) => `${i.path.join('.') || 'file'}: ${i.message}`).join('; ')
+        : error instanceof Error
+          ? error.message
+          : 'unreadable'
+      rejected.push({ path, reason: reason.slice(0, 300) })
     }
   }
   return out
